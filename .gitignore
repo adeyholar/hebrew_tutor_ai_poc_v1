@@ -8,3 +8,8 @@ __pycache__
 venv
 .DS_Store
 *.log
+*.pyc
+*.pyo
+*.egg-info
+*.swp
+*.bak
