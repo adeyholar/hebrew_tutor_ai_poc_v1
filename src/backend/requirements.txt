@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+aiohttp
+python-dotenv
+whisperx
+sqlalchemy
+pydantic
+# MFA via Conda; no Pip for core, but add Python wrapper if needed
+# mfa  # Placeholder note; installed via Conda
