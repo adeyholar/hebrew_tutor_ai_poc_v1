@@ -8,24 +8,31 @@ logging.basicConfig(level=logging.INFO)
 
 tanakh_books = {
     'Torah': ['Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy'],
-    'Prophets': ['Joshua', 'Judges', '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', 'Isaiah', 'Jeremiah', 'Ezekiel', 'Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'],
-    'Writings': ['Psalms', 'Proverbs', 'Job', 'Song of Songs', 'Ruth', 'Lamentations', 'Ecclesiastes', 'Esther', 'Daniel', 'Ezra', 'Nehemiah', '1 Chronicles', '2 Chronicles']
+    'Prophets': ['Joshua', 'Judges', 'I Samuel', 'II Samuel', 'I Kings', 'II Kings', 'Isaiah', 'Jeremiah', 'Ezekiel', 'Hosea', 'Joel', 'Amos', 'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'],
+    'Writings': ['Psalms', 'Proverbs', 'Job', 'Song of Songs', 'Ruth', 'Lamentations', 'Ecclesiastes', 'Esther', 'Daniel', 'Ezra', 'Nehemiah', 'I Chronicles', 'II Chronicles']
+}
+
+# Optional hashes (computed from successful downloads; add more as needed)
+known_hashes = {
+    'Genesis': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',  # Example SHA256; replace with actual from your files
+    'Exodus': 'your_hash_from_successful_download',  # e.g., hashlib.sha256(open('path').read()).hexdigest()
+    'I Samuel': 'your_hash_for_I_Samuel'
+    # Add for others if paranoid
 }
 
 def download_book(section, book, local_dir, language='Hebrew', version='Tanach with Text Only'):
     book_encoded = book.replace(' ', '%20')
-    url = f"https://raw.githubusercontent.com/Sefaria/Sefaria-Export/master/json/Tanakh/{section}/{book}/{language}/{version}.json"
+    url = f"https://raw.githubusercontent.com/Sefaria/Sefaria-Export/master/json/Tanakh/{section}/{book_encoded}/{language}/{version.replace(' ', '%20')}.json"
     path = os.path.join(local_dir, 'json', 'Tanakh', section, book, language, f"{version}.json")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
         subprocess.run(["wget", "--tries=3", "-O", path, url], check=True)
-        # Optional hash check (example for Genesis; add more)
-        if book == 'Genesis':
+        # Hash check if available
+        if book in known_hashes:
             with open(path, 'rb') as f:
                 file_hash = sha256(f.read()).hexdigest()
-            expected = 'your_known_hash_here'  # Compute once: python -c "import hashlib; print(hashlib.sha256(open('file').read()).hexdigest())"
-            if file_hash != expected:
-                raise ValueError("Hash mismatch for Genesis")
+            if file_hash != known_hashes[book]:
+                raise ValueError(f"Hash mismatch for {book}: got {file_hash}, expected {known_hashes[book]}")
         logging.info(f"Downloaded {book} ({language}/{version})")
     except subprocess.CalledProcessError as e:
         logging.error(f"Failed {book}: {e}")
