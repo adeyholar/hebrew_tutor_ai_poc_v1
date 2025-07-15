@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hebrew font stub; download/add local */
+@font-face {
+  font-family: 'Hebrew';
+  src: url('/fonts/hebrew-font.woff2') format('woff2');
+  /* Add actual font if available */
+}
+
+.font-hebrew {
+  font-family: 'Hebrew', sans-serif;
+}
+
+[dir="rtl"] {
+  direction: rtl;
+}
