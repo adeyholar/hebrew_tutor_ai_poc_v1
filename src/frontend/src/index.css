@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Resets for consistency/security (prevent layout shifts) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: sans-serif; /* Fallback */
+}
+
+/* Hebrew font stub: Place actual font in public/fonts/ for offline scalability */
+@font-face {
+  font-family: 'HebrewFont';
+  src: url('/fonts/hebrew-font.woff2') format('woff2'); /* Download free Hebrew font if needed */
+}
+
+.font-hebrew {
+  font-family: 'HebrewFont', sans-serif;
+}
+
+/* RTL support for Hebrew text (multimodal reading) */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
