@@ -2,17 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Hebrew font stub; download/add local */
+/* Hebrew font stub: For offline/scalability, add actual font to public/fonts/ */
 @font-face {
-  font-family: 'Hebrew';
-  src: url('/fonts/hebrew-font.woff2') format('woff2');
-  /* Add actual font if available */
+  font-family: 'HebrewFont';
+  src: url('/fonts/hebrew-font.woff2') format('woff2'); /* Stub; download free Hebrew font if needed */
+  font-weight: normal;
+  font-style: normal;
 }
 
 .font-hebrew {
-  font-family: 'Hebrew', sans-serif;
+  font-family: 'HebrewFont', sans-serif;
 }
 
+/* RTL for Hebrew text: Best practice for multimodal UI */
 [dir="rtl"] {
   direction: rtl;
+  text-align: right;
+}
+
+/* Resets for consistency/security (prevent unexpected styles) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: sans-serif; /* Fallback */
 }
