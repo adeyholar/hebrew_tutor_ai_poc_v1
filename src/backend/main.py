@@ -1,62 +1,56 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File
-from pydantic import BaseModel
-from dotenv import load_dotenv
+# src/backend/main.py
+from fastapi import FastAPI, Query
+from fastapi.responses import FileResponse
+from gtts import gTTS
 import os
-import torch
-import whisperx
-import subprocess
+import pickle
+from pydantic import BaseModel
 import tempfile
-import json
-import sqlalchemy as sa
 
-load_dotenv()
 app = FastAPI()
 
-device = os.getenv("DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
+# Load lexicon (secure: read-only)
+with open('../data/lexicon.dict', 'rb') as f:  # Adjust path
+    lexicon = pickle.load(f)
 
-# DB setup...
-
-# Health...
-
-# Agent 1...
-pronunciation_router = APIRouter(prefix="/pronunciation")
-class PronunciationResponse(BaseModel):
-    score: float
-    feedback: str
-    ipa: str
-
-@pronunciation_router.post("/")
-async def assess_pronunciation(audio: UploadFile = File(...)):
-    if not audio.filename.endswith(('.mp3', '.wav')):
-        raise HTTPException(400, "Invalid audio")
-    model = whisperx.load_model("large-v2", device=device, compute_type="float16")
-    result = model.transcribe(audio.file, language="he")
-    score = 0.95  # Stub; full: confidence-based
-    return PronunciationResponse(score=score, feedback="Good pronunciation", ipa="/example ipa/")
-
-# Agent 2...
-reading_router = APIRouter(prefix="/reading")
-class ReadingRequest(BaseModel):
+class TTSRequest(BaseModel):
     text: str
+    speed: float = 1.0
 
-class ReadingResponse(BaseModel):
-    audio_url: str
-    timings: list[dict]
+@app.post("/tts")
+async def generate_tts(request: TTSRequest):
+    # Validate input
+    if not request.text or request.speed < 0.5 or request.speed > 2.0:
+        return {"error": "Invalid input"}
+    
+    # Generate TTS (Hebrew support in gTTS)
+    tts = gTTS(request.text, lang='he', slow=request.speed < 1.0)  # Slow for <1.0
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp:
+        tts.save(tmp.name)
+        audio_path = tmp.name
+    
+    # Stub timings: Estimate ~0.5s per word (improve with wave analysis later)
+    words = request.text.split()
+    timings = [{"word": w, "start": i * 0.5, "end": (i + 1) * 0.5} for i, w in enumerate(words)]
+    
+    return {"audioUrl": f"/audio?path={audio_path}", "timings": timings}  # Serve via endpoint
 
-@reading_router.post("/")
-async def read_companion(request: ReadingRequest):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        text_path = os.path.join(temp_dir, "input.txt")
-        audio_path = os.path.join(temp_dir, "input.mp3")
-        with open(text_path, 'w', encoding='utf-8') as f:
-            f.write(request.text)
-        subprocess.run(["copy", "data/tanakh.mp3", audio_path], shell=True, check=True)
-        subprocess.run(["mfa", "align", "--clean", "--output_format", "json", temp_dir, "hebrew_mfa", "hebrew_mfa", temp_dir], check=True)
-        output_path = os.path.join(temp_dir, "input.json")  # MFA output
-        with open(output_path, 'r') as f:
-            data = json.load(f)
-        timings = [{"word": w['text'], "start": w['begin'], "end": w['end']} for w in data['tiers'][0]['items']]  # Parse MFA JSON
-    return ReadingResponse(audio_url="data/tanakh.mp3", timings=timings)
+@app.get("/audio")
+async def serve_audio(path: str = Query(...)):
+    if not os.path.exists(path):
+        return {"error": "Audio not found"}
+    response = FileResponse(path, media_type="audio/wav")
+    response.headers["Content-Disposition"] = "inline"  # Secure: No download prompt
+    # Cleanup after serve (async task in production)
+    return response
 
-app.include_router(pronunciation_router)
-app.include_router(reading_router)
+@app.get("/lexicon")
+async def get_lexicon(word: str = Query(...)):
+    # Secure: Sanitize word
+    word = word.strip()
+    if word not in lexicon:
+        return {"error": "Word not found"}
+    return lexicon[word]  # {ipa, morph}
+
+# Morphology enhancement stub: Integrate hspell in generate_lexicon.py (run manually for now)
+# Example: Add to generate_lexicon.py - import hspell; morph = hspell.analyze(word)
