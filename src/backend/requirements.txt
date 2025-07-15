@@ -6,4 +6,8 @@ whisperx
 sqlalchemy
 pydantic
 # MFA via Conda; no Pip for core, but add Python wrapper if needed
-# mfa  # Placeholder note; installed via Conda
+# mfa  # Placeholder note; installed via Condatransformers
+accelerate
+scipy
+torchaudio
+phonikud
